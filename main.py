@@ -23,6 +23,20 @@ SUMMARY_DIR = '/home/rseed42/Project/dnc/summary'
 VALIDATION_SPLIT = 0.25
 
 # ------------------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------------------
+class AttrDict(dict):
+    def __getattr__(self, key):
+        if key not in self:
+            raise AttributeError
+        return self[key]
+
+    def __setattr__(self, key, value):
+        if key not in self:
+            raise AttributeError
+        self[key] = value
+
+# ------------------------------------------------------------------------------
 # Dataset
 # ------------------------------------------------------------------------------
 class Dataset:
@@ -201,18 +215,20 @@ if __name__ == '__main__':
     ds = Dataset()
     ds.load(DATA_DIR, CACHE_DIR)
 
-
-#    model = LSTMModel(ds)
-#    model.train()
-
-machine = DNC(
-    ds.X_train,
-    ds.Y_train,
-    ds.X_test,
-    ds.Y_test,
-    summary_dir=SUMMARY_DIR,
-    N=ds.X_train.shape[1],
-    W=10,
-    R=3,
-    optimizer="RMSProp"
-)
+#    params = AttrDict(
+#        N=ds.X_train.shape[1],
+#        W=10,
+#        R=3,
+#        n_hidden=512,
+#        batch_size=1,
+#        disable_memory=False,
+#        summary_dir=SUMMARY_DIR,
+#        checkpoint_file=None,
+#        optimizer="RMSProp",
+#        learning_rate=0.001,
+#        clip_gradients=10.0,
+#        data_dir="./data"
+#
+#    )
+#
+# machine = DNC(ds, params)

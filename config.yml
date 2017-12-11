@@ -1,0 +1,13 @@
+dataset:
+  dir:
+    data: /home/rseed42/Data/babi/bAbi
+    cache: /home/rseed42/Project/dnc/cache
+    en10k: "en-10k"
+  name:
+    train:
+      data: train_data
+      labels: train_labels
+    test:
+      data: test_data
+      labels: test_labels
+

@@ -105,9 +105,17 @@ class FileProcessor:
         with open(filename, 'r') as fp:
             lines = map(Preprocessor.process, fp)
             stories = FileProcessor.stories_generator(lines)
+            # Reduce is a terminal operation and forces all transformations to be applied, therefore
+            # the whole file will be processed when we go out of scope
             unique_words, unique_answers = reduce(FileProcessor.calculate_unique, stories, (set(), set()))
             return StorySet(unique_words, unique_answers, stories)
 
+
+class OneHotEncoder:
+    @staticmethod
+    def encode(story_set):
+        log.info('Unique words: {}'.format(story_set.unique_words_len))
+        return story_set
 
 class BabiDatasetLoader:
     def __init__(self, config):
@@ -174,29 +182,22 @@ class BabiDatasetLoader:
         # 02. Convert each file into a sequence of stories
         story_sets = map(FileProcessor.process, data_files)
 
-        # 03. Determine the number of unique words and answers for the one-hot encoding
-        for story_set in story_sets:
-            print('Story set stories: {}'.format(len(list(story_set.stories))))
+        # 03. One-hot encode the individual story sets
+        encoded_sets = map(OneHotEncoder.encode, story_sets)
 
+        # 04. Save the data sets
 
-        #stories_list = map(self.process_data_file, data_files)
-        # So far no terminal operations have been applied to the generators, so we need to force the issue
-        # TODO: Separate the counting, so that we can still have a streaming operation and don't have to
-        # load the stories into memory (unless it is too slow otherwise)
-        #stories_count = len(stories_list)
-        #log.debug('Processed {} stories from file'.format(stories_count))
-        # Calculate the number of unique words and answers
-        #self.unique_word_count = len(self.unique_words)
-        #self.unique_answer_count = len(self.unique_answers)
-        # Convert the stories to one-hot vectors by padding to the longest user story
-        #log.info('Input will be a sequence of {} words,'.format(self.longest_story_len))
-        #log.info('padded by zeroes at the beginning when needed')
-        #one_hot_encoded_stories = map(self.one_hot_encode, stories)
+        # 05. Count the number of story sets as a terminal operation
+        story_set_count = reduce(lambda p, s: p + 1, encoded_sets, 0)
+
+        log.info('Processed {} story sets'.format(story_set_count))
+
+        return story_set_count
 
         # self.process(VALIDATION_SPLIT)
         # self.store_cache(cache_dir)
 
-    def one_hot_encode(self, story):
+    def one_hot_encode(self, story_set):
         pass
 
 

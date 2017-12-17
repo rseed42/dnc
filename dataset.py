@@ -3,10 +3,12 @@ import os
 import re
 import glob
 import numpy as np
-# from sklearn import preprocessing
+from sklearn import preprocessing
 # from sklearn.cross_validation import train_test_split
 import logging
 from functools import reduce
+import functional
+from functional import seq
 # ------------------------------------------------------------------------------
 # Globals
 # ------------------------------------------------------------------------------
@@ -25,35 +27,61 @@ log.addHandler(handler)
 # ------------------------------------------------------------------------------
 
 
-class DatasetBabi:
+class Dataset:
+    """
+    """
     def __init__(self, training_data, training_labels, testing_data, testing_labels):
         self.training_data = training_data
         self.training_labels = training_labels
         self.testing_data = testing_data
         self.testing_labels = testing_labels
 
-
-class StorySet:
-    def __init__(self, unique_words, unique_answers, stories):
+class StorySetInfo:
+    """
+    Data structure that is used to determine the statistics for the set of stories
+    """
+    def __init__(self, longest_story: int, unique_words: set, unique_answers: set):
+        """
+        Construct the info object
+        :param longest_story:  int
+        :param unique_words:   set
+        :param unique_answers:  set
+        """
+        self.longest_story = longest_story
         self.unique_words = unique_words
         self.unique_answers = unique_answers
-        self.stories = stories
-        self.unique_words_len = len(unique_words)
-        self.unique_answers_len = len(unique_answers)
+        self.unique_words_len = len(self.unique_words)
+        self.unique_answers_len = len(self.unique_answers)
+
+    def __str__(self) -> str:
+        return 'story: {} words: {} answers: {}'.format(
+            self.longest_story,
+            self.unique_words_len,
+            self.unique_answers_len
+        )
+
+    @staticmethod
+    def update(info, story):
+        return StorySetInfo(
+            max(info.longest_story, len(story.words)),
+            info.unique_words.union(set(story.words)),
+            info.unique_answers.union(set([story.answer]))
+        )
 
 
 class Story:
     def __init__(self):
         self.words = []
         self.answer = ''
-        self.unique_words = set()
+#        self.unique_words = set()
 
     def update_words(self, words):
         self.words.extend(words)
-        self.unique_words = self.unique_words.union(set(words))
+#        self.unique_words = self.unique_words.union(set(words))
 
     def __str__(self):
-        return '{}: {} : {}'.format(' '.join(self.words), self.answer, len(self.unique_words))
+#        return '{}: {} : {}'.format(' '.join(self.words), self.answer, len(self.unique_words))
+        return '{}: {}'.format(' '.join(self.words), self.answer)
 
 # ------------------------------------------------------------------------------
 # Processing functions grouped together as static methods for convenience
@@ -96,19 +124,24 @@ class FileProcessor:
                 yield story
                 story = Story()
 
-    @staticmethod
-    def calculate_unique(prev, story):
-        return prev[0].union(story.unique_words), prev[1].union([story.answer])
+    # @staticmethod
+    # def calculate_unique(prev, story):
+    #     return prev[0].union(story.unique_words), prev[1].union([story.answer])
 
-    @staticmethod
-    def process(filename):
-        with open(filename, 'r') as fp:
-            lines = map(Preprocessor.process, fp)
-            stories = FileProcessor.stories_generator(lines)
-            # Reduce is a terminal operation and forces all transformations to be applied, therefore
-            # the whole file will be processed when we go out of scope
-            unique_words, unique_answers = reduce(FileProcessor.calculate_unique, stories, (set(), set()))
-            return StorySet(unique_words, unique_answers, stories)
+    # @staticmethod
+    # def process(filename):
+    #
+    #     lines = seq.open(filename)
+    #     return lines
+
+
+        # with open(filename, 'r') as fp:
+        #     lines = map(Preprocessor.process, fp)
+        #     stories = FileProcessor.stories_generator(lines)
+        #     # Reduce is a terminal operation and forces all transformations to be applied, therefore
+        #     # the whole file will be processed when we go out of scope
+        #     unique_words, unique_answers = reduce(FileProcessor.calculate_unique, stories, (set(), set()))
+        #     return StorySet(unique_words, unique_answers, stories)
 
 
 class OneHotEncoder:
@@ -151,48 +184,108 @@ class BabiDatasetLoader:
             with open(os.path.join(cache_dir, filename), 'rb') as fp:
                 return np.load(fp)
 
-        return DatasetBabi(
-             load_array(self.config.dataset.name.train.data),
-             load_array(self.config.dataset.name.train.labels),
-             load_array(self.config.dataset.name.test.data),
-             load_array(self.config.dataset.name.test.labels)
-        )
+        # return DatasetBabi(
+        #      load_array(self.config.dataset.name.train.data),
+        #      load_array(self.config.dataset.name.train.labels),
+        #      load_array(self.config.dataset.name.test.data),
+        #      load_array(self.config.dataset.name.test.labels)
+        # )
 
-    def process_data_file(self, filename):
-        """
-        Stream processing of the data
-        :param filename:
-        :return:
-        """
-        log.info('Processing: {}'.format(filename))
-        with open(filename, 'r') as fp:
-            # Clean up the input first
-            clean_lines = map(self.process_line, fp)
-            # Convert the lines to stories
-            return list(self.gen_stories(clean_lines))
+    # def process_data_file(self, filename):
+    #     """
+    #     Stream processing of the data
+    #     :param filename:
+    #     :return:
+    #     """
+    #     log.info('Processing: {}'.format(filename))
+    #     with open(filename, 'r') as fp:
+    #         # Clean up the input first
+    #         clean_lines = map(self.process_line, fp)
+    #         # Convert the lines to stories
+    #         return list(self.gen_stories(clean_lines))
 
     def process_and_store_data(self, data_dir, cache_dir):
         log.debug("Processing data")
-        glob_en10k_dir_all_files = os.path.join(data_dir, 'en-10k/*')
+        glob_en10k_dir_all = os.path.join(data_dir, 'en-10k/*')
 
         # Do not process everything during development
         whitelist = ('/home/rseed42/Data/babi/bAbi/en-10k/qa1_single-supporting-fact_train.txt',)
         # 01. Create a stream of files to be processed
-        data_files = filter(lambda s: s in whitelist, glob.glob(glob_en10k_dir_all_files))
+        # data_files = filter(lambda s: s in whitelist, glob.glob(glob_en10k_dir_all_files))
+        # all_files = glob.glob(glob_en10k_dir_all)
+
+        all_files = functional.seq(glob.glob(glob_en10k_dir_all))
+        data_files = all_files.filter(lambda filename: filename in whitelist)
+        # data_files = all_files
+        log.info('data file count: {}'.format(data_files.len()))
+
+        preprocessed_lines = data_files\
+            .flat_map(lambda filename: seq.open(filename))\
+            .map(Preprocessor.process)
+
+        # No idea how to do this in a more functional way yet
+        # Idea: Mark all starting / ending records for a story, then assign a unique number, then group by key
+        stories = seq(FileProcessor.stories_generator(preprocessed_lines))
+
+        print('stories: {}'.format(stories.len()))
+
+
+        # Find out the maximum story length, the unique words, and the number of unique answers
+        info = stories.reduce(StorySetInfo.update, StorySetInfo(0, set(), set()))
+
+        print(info)
+        print('stories: {}'.format(stories.len()))
+
+        # Create the one-hot encoded word labels
+        label_binarizer = preprocessing.LabelBinarizer()
+        word_encoder = label_binarizer.fit(list(info.unique_words))
+
+        # Create the one-hot encoded answer labels
+        label_binarizer = preprocessing.LabelBinarizer()
+        answer_encoder = label_binarizer.fit(list(info.unique_answers))
+
+        # Encode the stories
+        def encode_story(story):
+            padded_words = [''] * info.longest_story
+            # Put the words to the right of the padded area (TODO: Check if this makes sense and use the left instead)
+            padded_words[info.longest_story - len(story.words):] = story.words
+            return word_encoder.transform(padded_words)
+
+        one_hot_encoded_stories = stories.map(encode_story)
+
+        print('oes count: {}'.format(one_hot_encoded_stories.len()))
+
+#        one_hot_encoded_stories.for_each(lambda oes: print(oes))
+
+        # Encode the answers
+        one_hot_encoded_answers = stories\
+            .map(lambda story: answer_encoder.transform([story.answer])[0])
+
+
+        print('oea count: {}'.format(one_hot_encoded_answers.len()))
+
+
+
+
+
+#        for i,l in enumerate(lines):
+#            print(i,l.strip())
+
+
         # 02. Convert each file into a sequence of stories
-        story_sets = map(FileProcessor.process, data_files)
+#        story_sets = map(FileProcessor.process, data_files)
 
         # 03. One-hot encode the individual story sets
-        encoded_sets = map(OneHotEncoder.encode, story_sets)
+#        encoded_sets = map(OneHotEncoder.encode, story_sets)
 
         # 04. Save the data sets
 
         # 05. Count the number of story sets as a terminal operation
-        story_set_count = reduce(lambda p, s: p + 1, encoded_sets, 0)
+#        story_set_count = reduce(lambda p, s: p + 1, encoded_sets, 0)
 
-        log.info('Processed {} story sets'.format(story_set_count))
+#        log.info('Processed {} story sets'.format(story_set_count))
 
-        return story_set_count
+#        return story_set_count
 
         # self.process(VALIDATION_SPLIT)
         # self.store_cache(cache_dir)

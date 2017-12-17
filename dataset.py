@@ -70,13 +70,13 @@ class StorySetInfo:
 
 
 class Story:
-    def __init__(self):
-        self.words = []
-        self.answer = ''
+    def __init__(self, words, answer):
+        self.words = words
+        self.answer = answer
 #        self.unique_words = set()
 
-    def update_words(self, words):
-        self.words.extend(words)
+    # def update_words(self, words):
+    #     self.words.extend(words)
 #        self.unique_words = self.unique_words.union(set(words))
 
     def __str__(self):
@@ -225,10 +225,29 @@ class BabiDatasetLoader:
 
         # No idea how to do this in a more functional way yet
         # Idea: Mark all starting / ending records for a story, then assign a unique number, then group by key
-        stories = seq(FileProcessor.stories_generator(preprocessed_lines))
+        # stories = seq(FileProcessor.stories_generator(preprocessed_lines))
+
+        def create_stories(current, next_line):
+            line_parts = next_line.split('\t')
+            # If we split by tab and have two elements, then the second element is the answer. In this case,
+            # we need to create the story object from the accumulated lines so far.
+            if len(line_parts) > 1:
+                # Concatenate all statements and then split by space
+                str_words = ' '.join(current[-1]) + line_parts[0]
+                # Construct the story and replace the previous list of lines that comprise it
+                return current[:-1] + [Story(str_words.split(), line_parts[1])] + [[]]
+            return current[:-1] + [current[-1] + [next_line]]
+
+        # We initialize the first list with the first line. Since we use
+        stories = preprocessed_lines\
+            .fold_left([[]], create_stories)
+
+        print('story count {}'.format(stories.len()))
+
+
+        return None
 
         print('stories: {}'.format(stories.len()))
-
 
         # Find out the maximum story length, the unique words, and the number of unique answers
         info = stories.reduce(StorySetInfo.update, StorySetInfo(0, set(), set()))
@@ -263,6 +282,11 @@ class BabiDatasetLoader:
 
 
         print('oea count: {}'.format(one_hot_encoded_answers.len()))
+
+
+
+
+
 
 
 

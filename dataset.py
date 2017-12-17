@@ -6,7 +6,6 @@ import numpy as np
 from sklearn import preprocessing
 # from sklearn.cross_validation import train_test_split
 import logging
-from functools import reduce
 import functional
 from functional import seq
 # ------------------------------------------------------------------------------
@@ -73,14 +72,8 @@ class Story:
     def __init__(self, words, answer):
         self.words = words
         self.answer = answer
-#        self.unique_words = set()
-
-    # def update_words(self, words):
-    #     self.words.extend(words)
-#        self.unique_words = self.unique_words.union(set(words))
 
     def __str__(self):
-#        return '{}: {} : {}'.format(' '.join(self.words), self.answer, len(self.unique_words))
         return '{}: {}'.format(' '.join(self.words), self.answer)
 
 # ------------------------------------------------------------------------------
@@ -107,48 +100,6 @@ class Preprocessor:
     def strip_digit(line):
         return str(re.sub('\d', '', line)).strip()
 
-
-class FileProcessor:
-    @staticmethod
-    def stories_generator(lines):
-        story = Story()
-        for line in lines:
-            # If the line contains a tab, then it is a question-answer pair. Otherwise, it is a statement
-            line_parts = line.split('\t')
-            # The first part of the line is always either a statement or a question. Update the story with
-            # the words that it contains
-            story.update_words(line_parts[0].split())
-
-            if len(line_parts) > 1:
-                story.answer = line_parts[1]
-                yield story
-                story = Story()
-
-    # @staticmethod
-    # def calculate_unique(prev, story):
-    #     return prev[0].union(story.unique_words), prev[1].union([story.answer])
-
-    # @staticmethod
-    # def process(filename):
-    #
-    #     lines = seq.open(filename)
-    #     return lines
-
-
-        # with open(filename, 'r') as fp:
-        #     lines = map(Preprocessor.process, fp)
-        #     stories = FileProcessor.stories_generator(lines)
-        #     # Reduce is a terminal operation and forces all transformations to be applied, therefore
-        #     # the whole file will be processed when we go out of scope
-        #     unique_words, unique_answers = reduce(FileProcessor.calculate_unique, stories, (set(), set()))
-        #     return StorySet(unique_words, unique_answers, stories)
-
-
-class OneHotEncoder:
-    @staticmethod
-    def encode(story_set):
-        log.info('Unique words: {}'.format(story_set.unique_words_len))
-        return story_set
 
 class BabiDatasetLoader:
     def __init__(self, config):
@@ -190,19 +141,6 @@ class BabiDatasetLoader:
         #      load_array(self.config.dataset.name.test.data),
         #      load_array(self.config.dataset.name.test.labels)
         # )
-
-    # def process_data_file(self, filename):
-    #     """
-    #     Stream processing of the data
-    #     :param filename:
-    #     :return:
-    #     """
-    #     log.info('Processing: {}'.format(filename))
-    #     with open(filename, 'r') as fp:
-    #         # Clean up the input first
-    #         clean_lines = map(self.process_line, fp)
-    #         # Convert the lines to stories
-    #         return list(self.gen_stories(clean_lines))
 
     def process_and_store_data(self, data_dir, cache_dir):
         log.debug("Processing data")

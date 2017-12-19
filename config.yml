@@ -1,13 +1,14 @@
+data:
+  data_dir: /home/rseed42/Data/babi/bAbi/en-10k
+  cache_dir: /home/rseed42/Project/dnc/cache
 dataset:
-  dir:
-    data: /home/rseed42/Data/babi/bAbi
-    cache: /home/rseed42/Project/dnc/cache
-    en10k: "en-10k"
-  name:
-    train:
-      data: train_data
-      labels: train_labels
-    test:
-      data: test_data
-      labels: test_labels
+  name: single-supporting-fact
+  train:
+    data_file: qa01_single-supporting-fact_train.txt
+    train_cache_file: train.dat
+    label_cache_file: train_labels.dat
+  test:
+    data_file: qa01_single-supporting-fact_test.txt
+    test_cache_file: test.dat
+    label_cache_file: test_labels.dat
 

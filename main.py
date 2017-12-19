@@ -93,9 +93,14 @@ if __name__ == '__main__':
 
     # Step 02: Load the training and testing data
     try:
-        # data_loader = BabiDatasetLoader(config)
-        # data = data_loader.load(config.dataset.dir.cache, config.dataset.dir.data)
-        data = BabiDatasetLoader(config).load(config.dataset.dir.cache, config.dataset.dir.data)
+        data = BabiDatasetLoader.load(
+            config.data.cache_dir,
+            config.data.data_dir,
+            config.dataset
+        )
+        if not data:
+            log.error('Could not load or reprocess the data. Aborting')
+            sys.exit(1)
     except IOError:
         log.error('Failed to load the bAbI data set')
         sys.exit(1)

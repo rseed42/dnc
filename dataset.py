@@ -194,35 +194,23 @@ class BabiDatasetLoader:
 
         # 5. Find out the maximum story length, the unique words, and the number of unique answers
         info = stories.reduce(StorySetInfo.update, StorySetInfo(0, set(), set()))
-
         log.info('Stories summary: {}'.format(info))
-
         # Create the one-hot encoded word labels
         label_binarizer = preprocessing.LabelBinarizer()
         word_encoder = label_binarizer.fit(list(info.unique_words))
-
         # Create the one-hot encoded answer labels
         label_binarizer = preprocessing.LabelBinarizer()
         answer_encoder = label_binarizer.fit(list(info.unique_answers))
-
         # 6. One-hot-encode the data
         one_hot_encoded_stories = stories.map(encode_story)
         # 7. One-hot-encode the answers (labels)
         one_hot_encoded_answers = stories.map(lambda story: answer_encoder.transform([story.answer])[0])
-
-
         # Store the data in the cache dir
         log.info('Storing data cache file {}'.format(data_cache_file))
         BabiDatasetLoader.store_file(data_cache_file, one_hot_encoded_stories)
-        # with open(data_cache_file, 'wb') as fp:
-        #     one_hot_encoded_stories_array = np.array(one_hot_encoded_stories.to_list())
-        #     log.info('one hot encoded stories format: {}'.format(one_hot_encoded_stories_array.shape))
-        #     np.save(fp, one_hot_encoded_stories_array, allow_pickle=False)
-
         # Store the answers in the cache dir
         log.info('Storing label cache file {}'.format(label_cache_file))
-        BabiDatasetLoader.store_file(label_cache_file, one_hot_encoded_stories)
-        # one_hot_encoded_answers.to_file(label_cache_file)
+        BabiDatasetLoader.store_file(label_cache_file, one_hot_encoded_answers)
 
     @staticmethod
     def store_file(filename, sequence):

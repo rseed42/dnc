@@ -101,8 +101,9 @@ if __name__ == '__main__':
         if not data:
             log.error('Could not load or reprocess the data. Aborting')
             sys.exit(1)
-    except IOError:
+    except IOError as exc:
         log.error('Failed to load the bAbI data set')
+        print(exc)
         sys.exit(1)
 
     # params = attrdict.AttrDict(

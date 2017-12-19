@@ -1,11 +1,9 @@
 import sys
 import os
 import re
-import glob
 import numpy as np
 from sklearn import preprocessing
 import logging
-import functional
 from functional import seq
 # ------------------------------------------------------------------------------
 # Globals
@@ -17,18 +15,15 @@ handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 log.addHandler(handler)
 # ------------------------------------------------------------------------------
-# Errors
-# ------------------------------------------------------------------------------
-
-# ------------------------------------------------------------------------------
 # bAbI data set loader and data object
 # ------------------------------------------------------------------------------
 
 
-class DataSet:
+class DatasetBabi:
     """
     """
-    def __init__(self, training_data, training_labels, testing_data, testing_labels):
+    def __init__(self, name, training_data, training_labels, testing_data, testing_labels):
+        self.name = name
         self.training_data = training_data
         self.training_labels = training_labels
         self.testing_data = testing_data
@@ -84,18 +79,18 @@ class Story:
 class BabiDatasetLoader:
 
     @staticmethod
-    def load(cache_dir, data_dir, dataset):
+    def load(parent_cache_dir, data_dir, dataset):
         """
         Load the data from cache if available. Otherwise, process and store it first, then load it.
-        :param cache_dir:
-        :param data_dir:
-        :param dataset:
+        :param parent_cache_dir: The cache dir where all different data sets are placed as subdirectories
+        :param data_dir: The data directory containing the bAbi dataset
+        :param dataset: Dataset configuration
         :return:
         """
+        cache_dir = os.path.join(parent_cache_dir, dataset.name)
         log.debug("Trying to load cached data from: {}".format(cache_dir))
         if not os.path.exists(cache_dir):
             log.info('No cached data found. Processing dataset {}'.format(dataset.name))
-            cache_dir = os.path.join(cache_dir, dataset.name)
             log.info('Creating cache directory: {}'.format(cache_dir))
             try:
                 os.makedirs(cache_dir)
@@ -114,7 +109,14 @@ class BabiDatasetLoader:
                 os.path.join(cache_dir, dataset.test.label_cache_file)
             )
 
-        return BabiDatasetLoader.load_from_cache(cache_dir)
+        return BabiDatasetLoader.load_from_cache(
+            dataset.name,
+            cache_dir,
+            dataset.train.train_cache_file,
+            dataset.train.label_cache_file,
+            dataset.test.test_cache_file,
+            dataset.test.label_cache_file
+        )
 
     @staticmethod
     def pad_punctuation_marks(line):
@@ -130,23 +132,31 @@ class BabiDatasetLoader:
         return str(re.sub('\d', '', line)).strip()
 
     @staticmethod
-    def load_from_cache(cache_dir):
+    def load_from_cache(dataset_name, cache_dir, train_file, train_labels_file, test_file, test_labels_file):
         """
         Read the numpy arrays from the cache dir
+        :param dataset_name:
         :param cache_dir:
+        :param train_file:
+        :param train_labels_file:
+        :param test_file:
+        :param test_labels_file:
         :return:
         """
         # An IO Exception is caught in the main function
         def load_array(filename):
             with open(os.path.join(cache_dir, filename), 'rb') as fp:
-                return np.load(fp)
+                ar = np.load(fp, allow_pickle=False)
+                log.info('Loading array shape: {} from file: {}'.format(ar.shape, filename))
+                return ar
 
-        # return DatasetBabi(
-        #      load_array(self.config.dataset.name.train.data),
-        #      load_array(self.config.dataset.name.train.labels),
-        #      load_array(self.config.dataset.name.test.data),
-        #      load_array(self.config.dataset.name.test.labels)
-        # )
+        return DatasetBabi(
+             dataset_name,
+             load_array(train_file),
+             load_array(train_labels_file),
+             load_array(test_file),
+             load_array(test_labels_file)
+        )
 
     @staticmethod
     def create_stories(current, next_line):
@@ -200,10 +210,23 @@ class BabiDatasetLoader:
         # 7. One-hot-encode the answers (labels)
         one_hot_encoded_answers = stories.map(lambda story: answer_encoder.transform([story.answer])[0])
 
+
         # Store the data in the cache dir
         log.info('Storing data cache file {}'.format(data_cache_file))
-        one_hot_encoded_stories.to_file(data_cache_file)
+        BabiDatasetLoader.store_file(data_cache_file, one_hot_encoded_stories)
+        # with open(data_cache_file, 'wb') as fp:
+        #     one_hot_encoded_stories_array = np.array(one_hot_encoded_stories.to_list())
+        #     log.info('one hot encoded stories format: {}'.format(one_hot_encoded_stories_array.shape))
+        #     np.save(fp, one_hot_encoded_stories_array, allow_pickle=False)
 
         # Store the answers in the cache dir
         log.info('Storing label cache file {}'.format(label_cache_file))
-        one_hot_encoded_answers.to_file(label_cache_file)
+        BabiDatasetLoader.store_file(label_cache_file, one_hot_encoded_stories)
+        # one_hot_encoded_answers.to_file(label_cache_file)
+
+    @staticmethod
+    def store_file(filename, sequence):
+        with open(filename, 'wb') as fp:
+            one_hot_encoded_array = np.array(sequence.to_list())
+            log.info('Storing one hot encoded array {}'.format(one_hot_encoded_array.shape))
+            np.save(fp, one_hot_encoded_array, allow_pickle=False)

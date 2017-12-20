@@ -4,6 +4,7 @@ import logging
 import yaml
 import attrdict
 from dataset import BabiDatasetLoader
+from dnc import DNC
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
@@ -45,3 +46,6 @@ if __name__ == '__main__':
         log.error('Failed to load the bAbI data set')
         print(exc)
         sys.exit(1)
+
+    # Step 03: Train the model
+    dnc = DNC(data, config.model)

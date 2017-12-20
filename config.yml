@@ -11,4 +11,17 @@ dataset:
     data_file: qa01_single-supporting-fact_test.txt
     test_cache_file: test.dat
     label_cache_file: test_labels.dat
-
+model:
+  name: dnc
+  N: 256
+  W: 64
+  R: 2
+  n_hidden: 512
+  batch_size: 1
+  disable_memory: False
+  summary_dir: None
+  checkpoint_file: None
+  optimizer: Adagrad
+  learning_rate: 0.001
+  clip_gradients: 10.0
+  data_dir: './dat'

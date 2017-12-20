@@ -1,14 +1,14 @@
 data:
-  data_dir: /home/rseed42/Data/babi/bAbi/en-10k
-  cache_dir: /home/rseed42/Project/dnc/cache
+  data_dir: /Users/g6714/Projects/dnc/data/tasks_1-20_v1-2/en-10k
+  cache_dir: /Users/g6714/Projects/dnc/cache
 dataset:
   name: single-supporting-fact
   train:
-    data_file: qa01_single-supporting-fact_train.txt
+    data_file: qa1_single-supporting-fact_train.txt
     train_cache_file: train.dat
     label_cache_file: train_labels.dat
   test:
-    data_file: qa01_single-supporting-fact_test.txt
+    data_file: qa1_single-supporting-fact_test.txt
     test_cache_file: test.dat
     label_cache_file: test_labels.dat
 model:

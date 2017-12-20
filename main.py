@@ -48,4 +48,4 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Step 03: Train the model
-    dnc = DNC(data, config.model)
+#    dnc = DNC(data, config.model)

@@ -30,7 +30,7 @@ class DNC(object):
         (self.n_test_instances, _, _) = self.X_test.shape
         (self.seq_output_len, self.n_classes)= self.y_train.shape
         self.n_read_inputs = self.W * self.R
-        self.n_interface_outputs = (self.W * self.R) _ 3 * self.W + 5 * self.R + 3
+        self.n_interface_outputs = (self.W * self.R) - 3 * self.W + 5 * self.R + 3
 
         # Tensorflow settings
         self.session = tf.Session()

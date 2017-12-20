@@ -22,7 +22,7 @@ log.addHandler(handler)
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
     # Here we go...
-    log.debug('Loading configuration')
+    log.info('Loading configuration')
 
     # Step 01: Load configuration
     try:
@@ -33,6 +33,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Step 02: Load the training and testing data
+    log.info('Loading data')
     try:
         data = BabiDatasetLoader.load(
             config.data.cache_dir,
@@ -48,4 +49,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Step 03: Train the model
-#    dnc = DNC(data, config.model)
+    dnc = DNC(data, config.model)
+    dnc.build(config.model)
+
+

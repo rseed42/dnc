@@ -19,8 +19,8 @@ model:
   n_hidden: 512
   batch_size: 1
   disable_memory: False
-  summary_dir: None
-  checkpoint_file: None
+  summary_dir:
+  checkpoint_file:
   optimizer: Adagrad
   learning_rate: 0.001
   clip_gradients: 10.0
